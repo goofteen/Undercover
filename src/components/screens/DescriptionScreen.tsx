@@ -13,6 +13,7 @@ interface Props {
 
 export default function DescriptionScreen({ room, players, gameState, localPlayer }: Props) {
   const turnTime = room.turn_time_sec ?? 60
+  const unlimited = turnTime === 0
   const [timeLeft, setTimeLeft] = useState(turnTime)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -26,6 +27,7 @@ export default function DescriptionScreen({ room, players, gameState, localPlaye
 
   // Reset timer when speaker changes
   useEffect(() => {
+    if (unlimited) return
     setTimeLeft(turnTime)
     if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
@@ -40,7 +42,7 @@ export default function DescriptionScreen({ room, players, gameState, localPlaye
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [gameState.current_player_index, turnTime])
+  }, [gameState.current_player_index, turnTime, unlimited])
 
   async function handleNext() {
     const nextIndex = gameState.current_player_index + 1
@@ -65,23 +67,25 @@ export default function DescriptionScreen({ room, players, gameState, localPlaye
         </div>
 
         {/* Timer */}
-        <div className="flex justify-center mb-4">
-          <div className={`text-5xl font-bold font-mono ${
-            timeLeft <= 10 ? 'text-red-500 animate-pulse' : timeLeft <= 30 ? 'text-orange-500' : 'text-gray-700'
-          }`}>
-            {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+        {!unlimited && (
+          <div className="flex justify-center mb-4">
+            <div className={`text-5xl font-bold font-mono ${
+              timeLeft <= 10 ? 'text-red-500 animate-pulse' : timeLeft <= 30 ? 'text-orange-500' : 'text-gray-700'
+            }`}>
+              {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+        {!unlimited && <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
           <div
             className={`h-2 rounded-full transition-all duration-1000 ${
               timeLeft <= 10 ? 'bg-red-500' : timeLeft <= 30 ? 'bg-orange-400' : 'bg-green-400'
             }`}
             style={{ width: `${(timeLeft / turnTime) * 100}%` }}
           />
-        </div>
+        </div>}
 
         {/* Current speaker */}
         <div className={`rounded-2xl p-6 text-center mb-6 ${
@@ -97,7 +101,7 @@ export default function DescriptionScreen({ room, players, gameState, localPlaye
           {isMyTurn && (
             <p className="text-yellow-100 text-sm mt-2">อธิบายคำลับของคุณโดยไม่พูดตรงๆ</p>
           )}
-          {timeLeft === 0 && (
+          {!unlimited && timeLeft === 0 && (
             <p className="text-red-500 text-sm mt-2 font-bold bg-white rounded-lg py-1">⏰ หมดเวลา!</p>
           )}
         </div>

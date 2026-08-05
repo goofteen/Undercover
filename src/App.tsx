@@ -12,6 +12,7 @@ import VotingScreen from './components/screens/VotingScreen'
 import EliminationScreen from './components/screens/EliminationScreen'
 import MrWhiteGuessScreen from './components/screens/MrWhiteGuessScreen'
 import GameOverScreen from './components/screens/GameOverScreen'
+import LeaveButton from './components/ui/LeaveButton'
 
 const LOCAL_KEY = 'undercover_player'
 
@@ -67,6 +68,12 @@ export default function App() {
     saveLocalPlayer(updated)
   }
 
+  function handleLeave() {
+    sessionStorage.removeItem(LOCAL_KEY)
+    setLocalPlayer(null)
+    window.history.replaceState({}, '', window.location.pathname)
+  }
+
   if (!localPlayer) return <HomeScreen onJoined={handleJoined} />
 
   if (loading || !room || !gameState) {
@@ -80,80 +87,89 @@ export default function App() {
     )
   }
 
+  const leaveBtn = <LeaveButton onLeave={handleLeave} />
+
   if (gameState.phase === 'lobby' || room.status === 'lobby') {
     return (
+      <>{leaveBtn}
       <LobbyScreen
         room={room}
         players={players}
         localPlayer={localPlayer}
         onRoleAssigned={handleRoleAssigned}
-      />
+      /></>
     )
   }
 
   if (gameState.phase === 'reveal') {
     return (
+      <>{leaveBtn}
       <WordRevealScreen
         room={room}
         players={players}
         localPlayer={localPlayer}
         onReady={() => {}}
-      />
+      /></>
     )
   }
 
   if (gameState.phase === 'description') {
     return (
+      <>{leaveBtn}
       <DescriptionScreen
         room={room}
         players={players}
         gameState={gameState}
         localPlayer={localPlayer}
-      />
+      /></>
     )
   }
 
   if (gameState.phase === 'voting') {
     return (
+      <>{leaveBtn}
       <VotingScreen
         room={room}
         players={players}
         gameState={gameState}
         localPlayer={localPlayer}
-      />
+      /></>
     )
   }
 
   if (gameState.phase === 'elimination') {
     return (
+      <>{leaveBtn}
       <EliminationScreen
         room={room}
         players={players}
         gameState={gameState}
         localPlayer={localPlayer}
-      />
+      /></>
     )
   }
 
   if (gameState.phase === 'mrwhite_guess') {
     return (
+      <>{leaveBtn}
       <MrWhiteGuessScreen
         room={room}
         players={players}
         gameState={gameState}
         localPlayer={localPlayer}
-      />
+      /></>
     )
   }
 
   if (gameState.phase === 'gameover') {
     return (
+      <>{leaveBtn}
       <GameOverScreen
         room={room}
         players={players}
         gameState={gameState}
         localPlayer={localPlayer}
-      />
+      /></>
     )
   }
 

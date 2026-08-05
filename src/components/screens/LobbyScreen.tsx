@@ -20,7 +20,6 @@ export default function LobbyScreen({ room, players, localPlayer, onRoleAssigned
 
   const isHost = localPlayer.id === room.host_player_id
   const shareUrl = `${window.location.origin}${window.location.pathname}?room=${room.room_code}`
-  const maxImpostors = Math.max(0, players.length - 2) // need at least 2 civilians
 
   async function handleStart() {
     if (players.length < 3) { alert('ต้องมีผู้เล่นอย่างน้อย 3 คน'); return }
@@ -109,7 +108,7 @@ export default function LobbyScreen({ room, players, localPlayer, onRoleAssigned
               <div className="flex items-center gap-2">
                 <button onClick={() => setUndercoverCount(Math.max(0, undercoverCount - 1))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">-</button>
                 <span className="w-6 text-center font-bold">{undercoverCount}</span>
-                <button onClick={() => setUndercoverCount(Math.min(maxImpostors - mrwhiteCount, undercoverCount + 1))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">+</button>
+                <button onClick={() => setUndercoverCount(Math.min(5, undercoverCount + 1))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">+</button>
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -117,15 +116,15 @@ export default function LobbyScreen({ room, players, localPlayer, onRoleAssigned
               <div className="flex items-center gap-2">
                 <button onClick={() => setMrwhiteCount(Math.max(0, mrwhiteCount - 1))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">-</button>
                 <span className="w-6 text-center font-bold">{mrwhiteCount}</span>
-                <button onClick={() => setMrwhiteCount(Math.min(maxImpostors - undercoverCount, mrwhiteCount + 1))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">+</button>
+                <button onClick={() => setMrwhiteCount(Math.min(3, mrwhiteCount + 1))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">+</button>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">⏱️ เวลาพูด (วินาที)</span>
+              <span className="text-gray-600">⏱️ เวลาพูด</span>
               <div className="flex items-center gap-2">
-                <button onClick={() => setTurnTimeSec(Math.max(10, turnTimeSec - 10))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">-</button>
-                <span className="w-8 text-center font-bold">{turnTimeSec}</span>
-                <button onClick={() => setTurnTimeSec(Math.min(180, turnTimeSec + 10))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">+</button>
+                <button onClick={() => setTurnTimeSec(turnTimeSec <= 10 ? 0 : turnTimeSec - 10)} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">-</button>
+                <span className="w-12 text-center font-bold text-sm">{turnTimeSec === 0 ? '∞' : `${turnTimeSec}s`}</span>
+                <button onClick={() => setTurnTimeSec(turnTimeSec === 0 ? 10 : Math.min(180, turnTimeSec + 10))} className="w-8 h-8 bg-gray-200 rounded-full font-bold hover:bg-gray-300">+</button>
               </div>
             </div>
           </div>
