@@ -1,0 +1,1 @@
+var e=`/Undercover/assets/dark-wall-B0bbesHr.png`;export{e as t};

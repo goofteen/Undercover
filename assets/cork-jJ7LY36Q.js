@@ -1,0 +1,1 @@
+var e=`/Undercover/assets/cork-D_DYnbrO.png`;export{e as t};

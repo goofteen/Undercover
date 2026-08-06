@@ -1,0 +1,1 @@
+var e=`/Undercover/assets/paper-DNTzt-1g.png`;export{e as t};
