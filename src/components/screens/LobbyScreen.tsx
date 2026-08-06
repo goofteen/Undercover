@@ -3,10 +3,66 @@ import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import { assignRoles, getWordForRole } from '../../lib/gameLogic'
 import { getRandomWordPair } from '../../lib/wordPairs'
-import AvatarBadge from '../ui/AvatarBadge'
 import corkTexture from '../../assets/textures/cork.png'
 import paperTexture from '../../assets/textures/paper.png'
+import { getAvatar } from '../../lib/avatars'
 import type { Player, LocalPlayerInfo, Room } from '../../types/game'
+
+const CARD_ROTATIONS = [-3, 2, -1, 3, -2, 1, -3, 2, -1, 3, -2, 1]
+
+function PolaroidCard({ p, localPlayer, index }: { p: Player; localPlayer: LocalPlayerInfo; index: number }) {
+  const rotate = CARD_ROTATIONS[index % CARD_ROTATIONS.length]
+  const isMe = p.id === localPlayer.id
+  const avatar = getAvatar(p.name)
+
+  return (
+    <motion.div
+      className="flex flex-col items-center"
+      initial={{ scale: 0, rotate: rotate * 2 }}
+      animate={{ scale: 1, rotate }}
+      transition={{ type: 'spring', stiffness: 320, damping: 20, delay: index * 0.06 }}
+    >
+      <div className="relative">
+        {/* Red push pin */}
+        <div
+          className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 w-5 h-5 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.5)',
+          }}
+        />
+        {/* Polaroid frame */}
+        <div
+          className="bg-white pt-2 px-2 pb-6"
+          style={{ boxShadow: '2px 5px 14px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.2)' }}
+        >
+          {/* Photo area */}
+          <div className="w-14 h-14 overflow-hidden">
+            <img src={avatar} alt={p.name} className="w-full h-full object-cover" />
+          </div>
+          {/* Caption strip */}
+          <div className="absolute bottom-1.5 left-0 right-0 flex flex-col items-center gap-0.5 px-1">
+            <span className="text-[9px] font-mono text-[#2E2618] font-semibold truncate max-w-[56px] leading-none">
+              {p.name}
+            </span>
+            <div className="flex gap-1">
+              {p.is_host && (
+                <span className="text-[7px] font-mono px-1 rounded bg-[#2E2618] text-[#D4AF37] leading-tight">
+                  HOST
+                </span>
+              )}
+              {isMe && (
+                <span className="text-[7px] font-mono px-1 rounded bg-[#2E2618] text-white leading-tight">
+                  you
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
 
 interface Props {
   room: Room
@@ -61,266 +117,172 @@ export default function LobbyScreen({ room, players, localPlayer, onRoleAssigned
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const colCount = players.length >= 10 ? 5 : players.length >= 7 ? 4 : 3
+  const colPct = `calc(${100 / colCount}% - 1.25rem)`
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-2">
-      {/* Cork board with dark wood border */}
+    <div className="min-h-screen flex items-center justify-center p-3">
+      {/* Cork board frame */}
       <div
-        className="relative w-full max-w-md rounded-md overflow-hidden"
+        className="relative w-full max-w-3xl rounded-md overflow-hidden"
         style={{
           border: '13px solid #3B2314',
-          boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: 'inset 0 0 30px rgba(0,0,0,0.35), 0 10px 40px rgba(0,0,0,0.6)',
         }}
       >
-        {/* Cork background */}
+        {/* Cork background — two-column flex */}
         <div
-          className="relative p-5 pb-6"
+          className="flex flex-col sm:flex-row"
           style={{
             backgroundImage: `url(${corkTexture})`,
             backgroundRepeat: 'repeat',
             backgroundSize: '200px 200px',
           }}
         >
-          {/* Red string decoration across top */}
+          {/* ── LEFT PANEL: player board ── */}
+          <div className="flex-1 p-5 min-h-64">
+            {/* Header */}
+            <div className="flex items-baseline justify-between mb-5">
+              <h2 className="font-heading text-uc-paper text-xl tracking-wide drop-shadow">
+                Case Lobby
+              </h2>
+              <span className="font-mono text-xs text-uc-paper/60 drop-shadow">
+                {players.length} AGENT{players.length !== 1 ? 'S' : ''}
+              </span>
+            </div>
+
+            {/* Polaroid grid */}
+            <div className="flex flex-wrap gap-5 justify-start pt-3 pb-2">
+              {players.map((p, i) => (
+                <div key={p.id} style={{ width: colPct }}>
+                  <PolaroidCard p={p} localPlayer={localPlayer} index={i} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── DIVIDER ── */}
           <div
-            className="absolute top-6 left-0 right-0 h-px opacity-40"
-            style={{ background: '#C0392B' }}
+            className="hidden sm:block w-px"
+            style={{ borderLeft: '2px dashed rgba(59,35,20,0.35)' }}
           />
 
-          {/* Room code on sticky note */}
-          <motion.div
-            className="relative mx-auto w-fit mb-6"
-            initial={{ scale: 0, rotate: -5 }}
-            animate={{ scale: 1, rotate: -2 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            {/* Push pin */}
-            <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
-              <div
-                className="w-5 h-5 rounded-full"
-                style={{
-                  background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
-                }}
-              />
-            </div>
-            {/* Sticky note */}
-            <div
-              className="bg-uc-sticky px-8 py-4 text-center"
-              style={{
-                transform: 'rotate(-2deg)',
-                boxShadow: '2px 3px 8px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(0,0,0,0.05)',
-              }}
-            >
-              <p className="text-xs font-body text-uc-ink-soft mb-1 tracking-wide uppercase">
-                รหัสห้อง
-              </p>
-              <div className="text-4xl font-bold tracking-widest text-uc-ink font-mono">
-                {room.room_code}
-              </div>
-            </div>
-          </motion.div>
+          {/* ── RIGHT PANEL: room code + settings ── */}
+          <div className="w-full sm:w-56 p-4 flex flex-col gap-4">
 
-          {/* Copy link button */}
-          <div className="flex justify-center mb-5">
-            <button
-              onClick={handleCopyLink}
-              className="px-4 py-1.5 border border-uc-ink-soft text-uc-ink font-body text-xs rounded-sm
-                         bg-uc-paper hover:bg-uc-paper-2 transition-colors shadow-sm"
-              style={{
-                backgroundImage: `url(${paperTexture})`,
-                backgroundSize: '150px 150px',
-              }}
-            >
-              {copied ? '/ Copied /' : '/ Copy Link /'}
-            </button>
-          </div>
-
-          {/* Player grid heading */}
-          <div className="mb-3">
-            <h3 className="font-heading text-uc-paper text-sm tracking-wide drop-shadow-sm">
-              Suspects ({players.length})
-            </h3>
-          </div>
-
-          {/* Player grid - 3 columns with pins */}
-          <div className="flex flex-wrap gap-4 justify-center mb-6 max-h-52 overflow-y-auto px-1">
-            {players.map((p, i) => (
-              <motion.div
-                key={p.id}
-                className="flex flex-col items-center"
-                style={{ width: 'calc(33.333% - 1rem)' }}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 400,
-                  damping: 18,
-                  delay: i * 0.06,
-                }}
-              >
-                {/* Red pin dot */}
-                <div
-                  className="w-3 h-3 rounded-full mb-1 flex-shrink-0"
-                  style={{
-                    background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
-                  }}
-                />
-                <AvatarBadge
-                  name={p.name}
-                  size="md"
-                  textTheme="light"
-                />
-                {p.is_host && (
-                  <span className="text-[10px] text-uc-gold font-mono mt-0.5">HOST</span>
-                )}
-                {p.id === localPlayer.id && (
-                  <span className="text-[10px] text-uc-string font-mono">(you)</span>
-                )}
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Host settings panel */}
-          {isHost && (
+            {/* Room code sticky */}
             <motion.div
-              className="relative mb-5 p-4 rounded-sm"
-              style={{
-                backgroundImage: `url(${paperTexture})`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '200px 200px',
-                backgroundColor: '#FAF6F0',
-                boxShadow: '2px 3px 10px rgba(0,0,0,0.2)',
-              }}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              {/* Pin for settings card */}
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)',
-                    boxShadow: '0 2px 3px rgba(0,0,0,0.3)',
-                  }}
-                />
-              </div>
-
-              <h3 className="font-heading text-uc-ink text-sm mb-3 text-center tracking-wide">
-                Case Settings
-              </h3>
-
-              {/* Undercover count */}
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-body text-uc-ink-soft">Undercover</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setUndercoverCount(Math.max(0, undercoverCount - 1))}
-                    className="w-7 h-7 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper
-                               text-uc-ink font-heading text-sm flex items-center justify-center
-                               hover:bg-uc-paper-2 transition-colors"
-                  >
-                    -
-                  </button>
-                  <span
-                    className="w-8 text-center font-heading text-uc-ink text-sm py-0.5 border-b border-dashed border-uc-ink-soft"
-                  >
-                    {undercoverCount}
-                  </span>
-                  <button
-                    onClick={() => setUndercoverCount(Math.min(5, undercoverCount + 1))}
-                    className="w-7 h-7 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper
-                               text-uc-ink font-heading text-sm flex items-center justify-center
-                               hover:bg-uc-paper-2 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Mr. White count */}
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-body text-uc-ink-soft">Mr. White</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setMrwhiteCount(Math.max(0, mrwhiteCount - 1))}
-                    className="w-7 h-7 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper
-                               text-uc-ink font-heading text-sm flex items-center justify-center
-                               hover:bg-uc-paper-2 transition-colors"
-                  >
-                    -
-                  </button>
-                  <span
-                    className="w-8 text-center font-heading text-uc-ink text-sm py-0.5 border-b border-dashed border-uc-ink-soft"
-                  >
-                    {mrwhiteCount}
-                  </span>
-                  <button
-                    onClick={() => setMrwhiteCount(Math.min(3, mrwhiteCount + 1))}
-                    className="w-7 h-7 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper
-                               text-uc-ink font-heading text-sm flex items-center justify-center
-                               hover:bg-uc-paper-2 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-            </motion.div>
-          )}
-
-          {/* Start game / waiting message */}
-          {isHost ? (
-            <motion.button
-              onClick={handleStart}
-              disabled={starting || players.length < 3}
-              className="w-full py-3.5 font-heading text-lg tracking-wide text-uc-ink
-                         rounded-sm transition-all disabled:opacity-40
-                         shadow-uc-paper-lifted hover:shadow-uc-paper active:translate-y-0.5"
-              style={{
-                backgroundImage: `url(${paperTexture})`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '200px 200px',
-                backgroundColor: '#FAF6F0',
-                border: '2px solid',
-                borderColor: '#D4A843',
-              }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {starting ? 'Opening Case...' : 'Start Game'}
-            </motion.button>
-          ) : (
-            <motion.div
-              className="relative text-center py-4 px-6 mx-auto w-fit"
-              style={{
-                backgroundImage: `url(${paperTexture})`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '200px 200px',
-                backgroundColor: '#FAF6F0',
-                transform: 'rotate(1deg)',
-                boxShadow: '2px 3px 8px rgba(0,0,0,0.2)',
-              }}
-              initial={{ rotate: 0, scale: 0.8, opacity: 0 }}
-              animate={{ rotate: 1, scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              className="relative mx-auto"
+              style={{ transform: 'rotate(2deg)' }}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
               {/* Pin */}
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)',
-                    boxShadow: '0 2px 3px rgba(0,0,0,0.3)',
-                  }}
-                />
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full"
+                style={{ background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)', boxShadow: '0 2px 4px rgba(0,0,0,0.45)' }}
+              />
+              <div
+                className="px-5 py-3 text-center w-full"
+                style={{ backgroundColor: '#F5E642', boxShadow: '2px 4px 10px rgba(0,0,0,0.3)' }}
+              >
+                <p className="text-[9px] font-mono text-[#5a5000] uppercase tracking-widest mb-0.5">Room Code</p>
+                <div className="text-3xl font-bold tracking-widest text-[#1a1800] font-mono">
+                  {room.room_code}
+                </div>
               </div>
-              <p className="font-body text-uc-ink-soft text-sm italic">
-                Waiting for Host...
-              </p>
             </motion.div>
-          )}
+
+            {/* Copy link */}
+            <button
+              onClick={handleCopyLink}
+              className="text-[10px] font-mono text-uc-ink/50 hover:text-uc-ink transition-colors underline text-center -mt-2"
+            >
+              {copied ? '✓ Copied!' : 'Copy invite link'}
+            </button>
+
+            {/* Case Settings (host only) */}
+            {isHost ? (
+              <motion.div
+                className="relative p-3 rounded-sm flex-1"
+                style={{
+                  backgroundImage: `url(${paperTexture})`,
+                  backgroundSize: '150px',
+                  backgroundColor: '#FAF6F0',
+                  boxShadow: '2px 3px 8px rgba(0,0,0,0.22)',
+                }}
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                {/* Pin */}
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 w-3.5 h-3.5 rounded-full"
+                  style={{ background: 'radial-gradient(circle at 35% 35%, #FF6B6B, #C0392B)', boxShadow: '0 2px 3px rgba(0,0,0,0.3)' }}
+                />
+                <h3 className="font-heading text-uc-ink text-xs mb-3 text-center tracking-widest uppercase">
+                  Case Settings
+                </h3>
+
+                {/* Undercover */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-body text-uc-ink-soft">Undercover</span>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setUndercoverCount(Math.max(0, undercoverCount - 1))}
+                      className="w-6 h-6 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper text-uc-ink text-xs flex items-center justify-center hover:bg-uc-paper-2 transition-colors">
+                      -
+                    </button>
+                    <span className="w-5 text-center font-heading text-uc-ink text-sm">{undercoverCount}</span>
+                    <button onClick={() => setUndercoverCount(Math.min(5, undercoverCount + 1))}
+                      className="w-6 h-6 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper text-uc-ink text-xs flex items-center justify-center hover:bg-uc-paper-2 transition-colors">
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mr. White */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-body text-uc-ink-soft">Mr. White</span>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setMrwhiteCount(Math.max(0, mrwhiteCount - 1))}
+                      className="w-6 h-6 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper text-uc-ink text-xs flex items-center justify-center hover:bg-uc-paper-2 transition-colors">
+                      -
+                    </button>
+                    <span className="w-5 text-center font-heading text-uc-ink text-sm">{mrwhiteCount}</span>
+                    <button onClick={() => setMrwhiteCount(Math.min(3, mrwhiteCount + 1))}
+                      className="w-6 h-6 rounded-full border border-dashed border-uc-ink-soft bg-uc-paper text-uc-ink text-xs flex items-center justify-center hover:bg-uc-paper-2 transition-colors">
+                      +
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex-1" />
+            )}
+
+            {/* Start / waiting */}
+            {isHost ? (
+              <motion.button
+                onClick={handleStart}
+                disabled={starting || players.length < 3}
+                className="w-full py-3 font-heading text-sm tracking-wide text-uc-ink rounded-sm disabled:opacity-40 transition-all"
+                style={{
+                  backgroundImage: `url(${paperTexture})`,
+                  backgroundSize: '150px',
+                  backgroundColor: '#FAF6F0',
+                  border: '2px solid #D4A843',
+                  boxShadow: '2px 4px 10px rgba(0,0,0,0.25)',
+                }}
+                whileHover={{ scale: 1.02, boxShadow: '2px 6px 16px rgba(0,0,0,0.3)' }}
+                whileTap={{ scale: 0.97 }}
+              >
+                {starting ? 'Opening Case...' : 'Start Investigation'}
+              </motion.button>
+            ) : (
+              <p className="text-center text-uc-paper/50 text-[11px] font-mono italic pb-1">
+                Waiting for host...
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -3,8 +3,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import { checkWinCondition } from '../../lib/gameLogic'
 import type { GameState, LocalPlayerInfo, Player, Room } from '../../types/game'
-import paperTexture from '../../assets/textures/paper.png'
-import darkWallTexture from '../../assets/textures/dark-wall.png'
+import noiseTexture from '../../assets/textures/noise.png'
 
 interface Props {
   room: Room
@@ -13,13 +12,14 @@ interface Props {
   localPlayer: LocalPlayerInfo
 }
 
-const FLOATING_MARKS = Array.from({ length: 14 }, (_, i) => ({
+const MARKS = Array.from({ length: 12 }, (_, i) => ({
   id: i,
-  left: `${5 + (i * 47 + 13) % 90}%`,
-  top: `${3 + (i * 31 + 7) % 88}%`,
-  size: 18 + (i % 4) * 8,
-  delay: i * 0.4,
-  duration: 4 + (i % 3) * 1.5,
+  left: `${5 + (i * 53 + 11) % 88}%`,
+  top: `${5 + (i * 37 + 7) % 82}%`,
+  size: 40 + (i % 4) * 28,
+  delay: i * 0.35,
+  duration: 4 + (i % 3) * 1.8,
+  rotate: (i * 47) % 360,
 }))
 
 export default function MrWhiteGuessScreen({ room, players, gameState, localPlayer }: Props) {
@@ -30,16 +30,14 @@ export default function MrWhiteGuessScreen({ room, players, gameState, localPlay
   const isMrWhite = mrwhitePlayer?.id === localPlayer.id
 
   async function handleGuess() {
-    if (!guess.trim()) return
+    if (!guess.trim() || submitted) return
     setSubmitted(true)
-
     const civilianWord = room.word_pair?.civilian ?? ''
     const correct = guess.trim().toLowerCase() === civilianWord.toLowerCase()
 
     if (correct) {
       await supabase.from('game_state').update({ phase: 'gameover', winner: 'mrwhite' }).eq('room_code', room.room_code)
     } else {
-      // Mr. White guessed wrong — check remaining win condition
       const winner = checkWinCondition(players)
       if (winner) {
         await supabase.from('game_state').update({ phase: 'gameover', winner }).eq('room_code', room.room_code)
@@ -57,93 +55,90 @@ export default function MrWhiteGuessScreen({ room, players, gameState, localPlay
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background: `linear-gradient(180deg, #0d0d1a 0%, #12122a 100%)`,
-      }}
+      className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
+      style={{ backgroundColor: '#0E0E1A' }}
     >
-      {/* Dark wall texture overlay */}
+      {/* Noise */}
       <div
-        className="absolute inset-0 opacity-10 pointer-events-none"
-        style={{ backgroundImage: `url(${darkWallTexture})`, backgroundSize: '300px' }}
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{ backgroundImage: `url(${noiseTexture})`, backgroundSize: '200px', opacity: 0.5 }}
       />
 
-      {/* Floating question marks */}
-      {FLOATING_MARKS.map((m) => (
+      {/* Glow */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(circle at 50% 40%, rgba(246,232,195,.08), transparent 55%)' }}
+      />
+
+      {/* Floating ? marks */}
+      {MARKS.map((m) => (
         <motion.span
           key={m.id}
-          className="absolute font-heading text-uc-gold pointer-events-none select-none"
+          className="absolute font-heading pointer-events-none select-none z-0"
           style={{
-            left: m.left,
-            top: m.top,
+            left: m.left, top: m.top,
             fontSize: m.size,
-            opacity: 0.08,
+            color: m.id % 3 === 0 ? 'rgba(212,175,55,.08)' : 'rgba(246,232,195,.06)',
           }}
-          animate={{
-            y: [0, -18, 0],
-            rotate: [0, 8, -8, 0],
-          }}
-          transition={{
-            duration: m.duration,
-            delay: m.delay,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+          animate={{ y: [0, -20, 0], rotate: [m.rotate, m.rotate + 12, m.rotate - 12, m.rotate] }}
+          transition={{ duration: m.duration, delay: m.delay, repeat: Infinity, ease: 'easeInOut' }}
         >
           ?
         </motion.span>
       ))}
 
-      {/* Center card */}
-      <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.25, 0.7, 0.35, 1] }}
-        className="relative w-full max-w-md bg-uc-surface border-2 border-uc-gold rounded-uc-2 shadow-uc-large p-8 text-center z-10"
-      >
-        {/* Subtle gold corner accents */}
-        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-uc-gold rounded-tl-uc-2 opacity-60" />
-        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-uc-gold rounded-tr-uc-2 opacity-60" />
-        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-uc-gold rounded-bl-uc-2 opacity-60" />
-        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-uc-gold rounded-br-uc-2 opacity-60" />
-
-        {/* Title */}
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-7">
+        {/* Heading */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          className="text-center"
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          transition={{ duration: 0.6 }}
         >
-          <h2 className="font-heading text-2xl text-uc-danger mb-2">
-            Mr. White ถูกจับแล้ว!
+          <h2 className="font-heading text-3xl text-white tracking-wide mb-2">
+            Mr. White, last chance.
           </h2>
-          <p className="text-sm text-uc-gold/70 font-body mb-6">
-            {mrwhitePlayer?.name} ยังมีโอกาสเดาคำของพลเมือง -- ถ้าเดาถูก Mr. White ชนะ!
+          <p className="font-mono text-sm text-[#B9BEC8]">
+            {isMrWhite
+              ? 'Guess the secret word to steal the case.'
+              : `${mrwhitePlayer?.name ?? 'Mr. White'} is making their guess…`}
           </p>
         </motion.div>
 
         {isMrWhite ? (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            className="w-full flex flex-col gap-6"
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="space-y-5"
+            transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <p className="text-uc-paper font-body text-sm">
-              คุณคิดว่าคำลับของพลเมืองคืออะไร?
-            </p>
-
-            {/* Typewriter-style input */}
-            <div className="relative">
-              <input
-                type="text"
-                value={guess}
-                onChange={(e) => setGuess(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleGuess()}
-                placeholder="พิมพ์คำเดา..."
-                disabled={submitted}
-                autoFocus
-                className="w-full bg-transparent border-b-2 border-uc-gold px-3 py-3 text-xl text-center font-mono text-uc-paper placeholder:text-uc-ink-soft/40 focus:outline-none focus:border-uc-gold disabled:opacity-50 transition-colors"
-              />
+            {/* Input */}
+            <div className="flex flex-col gap-2">
+              <label className="font-mono text-xs text-[#B9BEC8] tracking-[.18em]">YOUR GUESS</label>
+              <div
+                className="flex items-baseline gap-2"
+                style={{ borderBottom: '3px solid rgba(246,232,195,.5)' }}
+              >
+                <input
+                  type="text"
+                  value={guess}
+                  onChange={(e) => setGuess(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleGuess()}
+                  placeholder="type the secret word…"
+                  disabled={submitted}
+                  autoFocus
+                  className="flex-1 bg-transparent border-none outline-none font-mono text-2xl text-white placeholder:text-white/20 pb-2 disabled:opacity-50"
+                />
+                {/* Blinking cursor */}
+                {!submitted && (
+                  <motion.span
+                    className="w-[3px] h-8 bg-uc-gold flex-shrink-0"
+                    animate={{ opacity: [1, 1, 0, 0] }}
+                    transition={{ duration: 1.1, repeat: Infinity, times: [0, 0.49, 0.5, 1] }}
+                  />
+                )}
+              </div>
             </div>
 
             {/* Submit button */}
@@ -152,36 +147,32 @@ export default function MrWhiteGuessScreen({ room, players, gameState, localPlay
               disabled={submitted || !guess.trim()}
               whileHover={!submitted && guess.trim() ? { scale: 1.02 } : {}}
               whileTap={!submitted && guess.trim() ? { scale: 0.97 } : {}}
-              className="w-full py-4 bg-uc-danger hover:bg-uc-danger-dark text-white text-lg font-heading rounded-uc-2 transition-colors shadow-uc-large disabled:opacity-40 disabled:cursor-not-allowed"
+              className="font-heading text-xl tracking-widest px-10 py-4 rounded-lg border-2 border-double border-[#D83A3A] text-[#D83A3A] disabled:opacity-30 transition-all"
+              style={{
+                transform: 'rotate(-1deg)',
+                boxShadow: guess.trim() && !submitted ? '0 0 26px rgba(216,58,58,.25)' : undefined,
+              }}
             >
-              {submitted ? 'รอผล...' : 'ส่งคำตอบ'}
+              {submitted ? 'SUBMITTED…' : 'SUBMIT GUESS'}
             </motion.button>
           </motion.div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="relative rounded-uc-2 p-6 overflow-hidden"
-            style={{
-              backgroundImage: `url(${paperTexture})`,
-              backgroundSize: '200px',
-            }}
+            className="w-full text-center py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
           >
-            {/* Paper note look */}
-            <div className="absolute inset-0 bg-uc-paper/90" />
-            <div className="relative">
-              <motion.p
-                className="text-uc-ink-soft font-body text-base"
-                animate={{ opacity: [0.6, 1, 0.6] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                รอ {mrwhitePlayer?.name} เดาคำ...
-              </motion.p>
-            </div>
+            <motion.p
+              className="font-heading text-xl text-white/60"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              {mrwhitePlayer?.name ?? 'Mr. White'} is thinking…
+            </motion.p>
           </motion.div>
         )}
-      </motion.div>
+      </div>
     </div>
   )
 }

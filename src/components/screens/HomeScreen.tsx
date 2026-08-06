@@ -109,7 +109,7 @@ export default function HomeScreen({ onJoined }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-uc-bg flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#1A1A2E' }}>
       {/* Case folder card */}
       <motion.div
         className="relative w-full max-w-md shadow-uc-paper"
@@ -193,7 +193,7 @@ export default function HomeScreen({ onJoined }: Props) {
               >
                 <motion.div variants={fadeUp}>
                   <label className="block text-xs font-heading text-uc-ink-soft tracking-wider uppercase mb-2">
-                    ชื่อของคุณ
+                    DETECTIVE ID
                   </label>
                   <input
                     type="text"
@@ -209,7 +209,7 @@ export default function HomeScreen({ onJoined }: Props) {
                 {mode === 'join' && (
                   <motion.div variants={fadeUp}>
                     <label className="block text-xs font-heading text-uc-ink-soft tracking-wider uppercase mb-2">
-                      รหัสห้อง
+                      ROOM CODE
                     </label>
                     <input
                       type="text"

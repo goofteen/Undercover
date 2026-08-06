@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Crosshair, SkipForward } from '@phosphor-icons/react'
 import { supabase } from '../../lib/supabase'
 import type { GameState, LocalPlayerInfo, Player, Room } from '../../types/game'
-import AvatarBadge from '../ui/AvatarBadge'
 import corkTexture from '../../assets/textures/cork.png'
 import paperTexture from '../../assets/textures/paper.png'
+import noiseTexture from '../../assets/textures/noise.png'
+import { getAvatar } from '../../lib/avatars'
 
 const SKIP_KEY = '__skip__'
+const ROTATIONS = [-3, 2, -1.5, 3, -2, 1.5, -3, 2, -1.5, 3, -2, 1.5]
 
 interface Props {
   room: Room
@@ -24,239 +25,198 @@ export default function VotingScreen({ room, players, gameState, localPlayer }: 
   const myVoteFromDB = Object.entries(votes).find(([, voters]) =>
     voters.includes(localPlayer.id)
   )?.[0]
-
-  // Optimistic: use local state until DB confirms
   const myVote = myVoteFromDB ?? localVotedFor
   const hasVoted = !!myVote
 
-  // Count how many alive players have voted (including skips)
   const allVoterIds = new Set(Object.values(votes).flat())
   const totalVoters = allVoterIds.size
-  const waitingFor = alivePlayers.length - totalVoters
 
   async function handleVote(targetId: string) {
     if (hasVoted) return
-
-    // Optimistic update — instant UI feedback
     setLocalVotedFor(targetId)
-
     const currentVotes = { ...votes }
     if (!currentVotes[targetId]) currentVotes[targetId] = []
     currentVotes[targetId] = [...currentVotes[targetId], localPlayer.id]
-
-    // Check if all alive players voted
     const allVoters = new Set(Object.values(currentVotes).flat())
     const allVoted = alivePlayers.every((p) => allVoters.has(p.id))
-
-    // Single update — include phase change when all voted to avoid a second round-trip
     await supabase.from('game_state').update({
       votes: currentVotes,
       ...(allVoted ? { phase: 'elimination' } : {}),
     }).eq('room_code', room.room_code)
   }
 
-  const voteCount = (playerId: string) => votes[playerId]?.length ?? 0
-  const skipCount = votes[SKIP_KEY]?.length ?? 0
-  const skippedByMe = myVote === SKIP_KEY
+  const accusedName = myVote && myVote !== SKIP_KEY
+    ? alivePlayers.find((p) => p.id === myVote)?.name?.toUpperCase()
+    : null
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 bg-uc-bg"
-    >
+    <div className="min-h-screen flex flex-col bg-[#1A1A2E] relative overflow-hidden">
+      {/* Noise overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{ backgroundImage: `url(${noiseTexture})`, backgroundSize: '200px', opacity: 0.5 }}
+      />
+
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-5 pt-8 pb-4">
+        <h2 className="font-heading text-2xl text-white tracking-wide leading-tight">
+          Who is the<br />undercover?
+        </h2>
+        <div className="font-mono text-xs text-uc-gold border border-uc-gold rounded-full px-3 py-1.5 tracking-widest flex-shrink-0">
+          {totalVoters} / {alivePlayers.length} VOTED
+        </div>
+      </div>
+
       {/* Cork board */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-full max-w-md rounded-uc-2 shadow-uc-large overflow-hidden"
+        className="relative z-10 flex-1 mx-4 rounded-2xl overflow-hidden"
         style={{
-          border: '12px solid #5C3D1E',
-          borderImage: 'linear-gradient(145deg, #7B5B3A 0%, #3E2712 40%, #5C3D1E 60%, #7B5B3A 100%) 12',
+          border: '12px solid #6E4A26',
+          backgroundImage: `url(${corkTexture})`,
+          backgroundColor: '#A87848',
+          backgroundSize: '200px',
+          boxShadow: 'inset 0 4px 18px rgba(0,0,0,.35), 0 12px 32px rgba(0,0,0,.4)',
+          minHeight: '280px',
         }}
       >
-        <div
-          className="relative p-5"
-          style={{
-            backgroundImage: `url(${corkTexture})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-            className="text-center mb-5"
-          >
-            <h2 className="font-heading text-2xl text-uc-gold drop-shadow-md">
-              <span className="mr-2">&#x1f5f3;&#xfe0f;</span>
-              ลงมติโหวต
-            </h2>
-            <p className="font-body text-sm text-uc-paper/80 mt-1">
-              {hasVoted
-                ? `รอ ${waitingFor} คน...`
-                : 'เลือกผู้เล่นที่คุณสงสัย หรือข้ามโหวต'}
-            </p>
-          </motion.div>
+        <div className="flex flex-wrap gap-5 justify-center p-5 pt-7">
+          {alivePlayers.map((p, i) => {
+            const isVotedFor = myVote === p.id
+            const isSelf = p.id === localPlayer.id
+            const hasThisPlayerVoted = allVoterIds.has(p.id)
+            const voteCount = votes[p.id]?.length ?? 0
+            const rot = ROTATIONS[i % ROTATIONS.length]
+            const avatar = getAvatar(p.name)
 
-          {/* Progress */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25, duration: 0.3 }}
-            className="text-center mb-4"
-          >
-            <span className="font-mono text-sm text-uc-gold">
-              โหวตแล้ว {totalVoters}/{alivePlayers.length} คน
-            </span>
-          </motion.div>
-
-          {/* Player grid */}
-          <div className="flex flex-wrap justify-center gap-4 mb-5">
-            {alivePlayers.map((p, i) => {
-              const count = voteCount(p.id)
-              const isSelf = p.id === localPlayer.id
-              const isVotedFor = myVote === p.id
-              const hasThisPlayerVoted = allVoterIds.has(p.id)
-
-              return (
-                <motion.button
-                  key={p.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.06, duration: 0.35 }}
-                  onClick={() => handleVote(p.id)}
-                  disabled={hasVoted || isSelf}
-                  className={`relative flex flex-col items-center w-[calc(33.333%-1rem)] min-w-[80px] group ${
-                    isSelf ? 'opacity-40 cursor-not-allowed' : hasVoted ? 'cursor-default' : 'cursor-pointer'
-                  }`}
+            return (
+              <motion.div
+                key={p.id}
+                className={`relative ${!hasVoted && !isSelf ? 'cursor-pointer' : 'cursor-default'}`}
+                style={{ rotate: `${isVotedFor ? 0 : rot}deg` }}
+                onClick={() => !hasVoted && !isSelf && handleVote(p.id)}
+                whileHover={!hasVoted && !isSelf ? { scale: 1.06, rotate: '0deg' } : {}}
+                whileTap={!hasVoted && !isSelf ? { scale: 0.97 } : {}}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 22 }}
+              >
+                {/* Red pin */}
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 w-5 h-5 rounded-full"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #F27B6C, #C0392B 65%)',
+                    boxShadow: '0 3px 5px rgba(0,0,0,.45)',
+                  }}
+                />
+                {/* Polaroid */}
+                <div
+                  className={`relative bg-white pt-2 px-2 pb-7 ${isSelf ? 'opacity-40' : ''}`}
+                  style={{
+                    boxShadow: isVotedFor
+                      ? '0 0 0 2px rgba(216,58,58,.6), 0 10px 28px rgba(20,16,4,.45)'
+                      : '0 6px 16px rgba(20,16,4,.4)',
+                    backgroundImage: `url(${paperTexture})`,
+                    backgroundSize: '150px',
+                  }}
                 >
-                  {/* Pin */}
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full bg-gradient-to-br from-red-400 to-red-700 shadow-md border border-red-900/40" />
-
-                  {/* Avatar container */}
-                  <div className="relative mt-1">
-                    <AvatarBadge
-                      name={p.name}
-                      size="lg"
-                      selected={isVotedFor}
-                    />
-
-                    {/* Red crosshair overlay when voted for */}
-                    {isVotedFor && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 1.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.25 }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                      >
-                        <div className="w-16 h-16 rounded-full border-[3px] border-uc-danger relative">
-                          {/* Crosshair horizontal line */}
-                          <div className="absolute top-1/2 left-0 w-full h-[2px] bg-uc-danger -translate-y-1/2" />
-                          {/* Crosshair vertical line */}
-                          <div className="absolute left-1/2 top-0 h-full w-[2px] bg-uc-danger -translate-x-1/2" />
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Hover crosshair for non-self, not-yet-voted */}
-                    {!hasVoted && !isSelf && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none">
-                        <Crosshair size={40} weight="bold" className="text-uc-danger" />
-                      </div>
-                    )}
-
-                    {/* Vote status badge */}
-                    {hasThisPlayerVoted ? (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-uc-success rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm z-20">
-                        &#x2713;
-                      </div>
-                    ) : (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-400/60 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm z-20">
-                        &#x23F3;
-                      </div>
-                    )}
-
-                    {/* Vote count badge */}
-                    {hasVoted && count > 0 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                        className="absolute -bottom-1 -right-1 min-w-[22px] h-[22px] px-1 bg-uc-danger rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md z-20"
-                      >
-                        {count}
-                      </motion.div>
-                    )}
+                  {/* Photo */}
+                  <div className="w-[76px] h-[68px] overflow-hidden">
+                    <img src={avatar} alt={p.name} className="w-full h-full object-cover" />
                   </div>
 
-                  {/* Player name label */}
-                  <span className={`mt-1 text-xs font-mono truncate max-w-[72px] ${
-                    isSelf ? 'text-uc-paper/50' : 'text-uc-paper'
-                  }`}>
-                    {p.name} {isSelf && '(คุณ)'}
-                  </span>
-                </motion.button>
-              )
-            })}
-          </div>
+                  {/* Crosshair overlay */}
+                  {isVotedFor && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 1.4 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.25 }}
+                      className="absolute inset-0 pointer-events-none"
+                    >
+                      <div
+                        className="absolute rounded-full border-2 border-[#D83A3A]"
+                        style={{ inset: '10px', boxShadow: '0 0 18px rgba(216,58,58,.5)' }}
+                      />
+                      <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-[#D83A3A] -translate-x-1/2" />
+                      <div className="absolute left-0 right-0 top-1/2 h-[2px] bg-[#D83A3A] -translate-y-1/2" />
+                    </motion.div>
+                  )}
 
-          {/* Skip vote - paper stamp style */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + alivePlayers.length * 0.06, duration: 0.35 }}
-            className="flex justify-center"
-          >
-            <button
-              onClick={() => handleVote(SKIP_KEY)}
-              disabled={hasVoted}
-              className={`relative group px-6 py-3 rounded-uc transition-all duration-200 ${
-                skippedByMe
-                  ? 'opacity-100'
-                  : hasVoted
-                  ? 'opacity-40 cursor-default'
-                  : 'cursor-pointer hover:scale-105 active:scale-95'
-              }`}
-              style={{
-                backgroundImage: `url(${paperTexture})`,
-                backgroundSize: 'cover',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <SkipForward size={20} weight="bold" className="text-uc-ink-soft" />
-                <span className="font-heading text-uc-ink tracking-wide uppercase text-sm">
-                  PASS
-                </span>
-              </div>
+                  {/* VOTED ribbon */}
+                  {hasThisPlayerVoted && (
+                    <div className="absolute top-2 -right-1.5 rotate-[12deg] font-mono text-[7px] tracking-wider text-white bg-[#2ECC71] rounded px-1.5 py-0.5 shadow-sm">
+                      VOTED
+                    </div>
+                  )}
 
-              {/* Stamp overlay when selected */}
-              {skippedByMe && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 3, rotate: -14 }}
-                  animate={{ opacity: 1, scale: 1, rotate: -14 }}
-                  transition={{ duration: 0.3, ease: [0.25, 0.7, 0.35, 1] }}
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                >
-                  <div className="border-[3px] border-uc-danger rounded-uc px-3 py-1">
-                    <span className="font-heading text-uc-danger text-lg tracking-widest">
-                      PASS
+                  {/* Vote count badge */}
+                  {hasVoted && voteCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                      className="absolute -bottom-2.5 -right-2.5 w-6 h-6 rounded-full bg-[#D83A3A] flex items-center justify-center text-white text-xs font-bold shadow-md z-20"
+                    >
+                      {voteCount}
+                    </motion.div>
+                  )}
+
+                  {/* Caption */}
+                  <div className="absolute bottom-1 left-0 right-0 text-center px-1">
+                    <span className="font-mono text-[10px] text-[#2E2618] font-semibold truncate block">
+                      {p.name}
                     </span>
                   </div>
-                </motion.div>
-              )}
-
-              {/* Skip count badge */}
-              {hasVoted && skipCount > 0 && (
-                <div className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                  {skipCount}
                 </div>
-              )}
-            </button>
-          </motion.div>
+              </motion.div>
+            )
+          })}
         </div>
       </motion.div>
+
+      {/* Bottom action row */}
+      <div className="relative z-10 flex justify-center items-center gap-4 px-5 py-5">
+        {/* PASS */}
+        <button
+          onClick={() => handleVote(SKIP_KEY)}
+          disabled={hasVoted}
+          className={`font-heading text-base tracking-widest px-7 py-3 rounded-lg border-2 border-double transition-all ${
+            myVote === SKIP_KEY
+              ? 'border-[#B9BEC8] text-white'
+              : hasVoted
+              ? 'border-[#B9BEC8]/20 text-[#B9BEC8]/20 cursor-default'
+              : 'border-[#B9BEC8] text-[#B9BEC8] hover:text-white hover:border-white active:scale-[0.98]'
+          }`}
+          style={{ transform: 'rotate(-1deg)' }}
+        >
+          PASS
+        </button>
+
+        {/* ACCUSE label / result */}
+        {accusedName ? (
+          <motion.div
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="font-heading text-base tracking-widest px-7 py-3 rounded-lg border-2 border-double border-[#D83A3A] text-[#D83A3A]"
+            style={{ transform: 'rotate(1deg)', boxShadow: '0 0 22px rgba(216,58,58,.2)' }}
+          >
+            ACCUSED: {accusedName}
+          </motion.div>
+        ) : (
+          <div
+            className={`font-heading text-base tracking-widest px-7 py-3 rounded-lg border-2 border-double transition-all ${
+              hasVoted
+                ? 'border-[#D83A3A]/20 text-[#D83A3A]/20'
+                : 'border-[#D83A3A]/40 text-[#D83A3A]/40'
+            }`}
+            style={{ transform: 'rotate(1deg)' }}
+          >
+            ACCUSE ???
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase'
 import type { LocalPlayerInfo, Player, Room } from '../../types/game'
 import { getWordForRole } from '../../lib/gameLogic'
 import SecretCard from '../ui/SecretCard'
+import noiseTexture from '../../assets/textures/noise.png'
+import paperTexture from '../../assets/textures/paper.png'
 
 interface Props {
   room: Room
@@ -22,8 +24,6 @@ export default function WordRevealScreen({ room, players, localPlayer, onReady }
 
   async function handleReady() {
     setReady(true)
-    // If host, check if we can proceed (simplified: host controls transition)
-    // For now, host advances after seeing their word
     if (myPlayer?.is_host) {
       await supabase.from('game_state').update({
         phase: 'description',
@@ -34,62 +34,78 @@ export default function WordRevealScreen({ room, players, localPlayer, onReady }
   }
 
   return (
-    <div className="min-h-screen bg-uc-bg flex flex-col items-center justify-center p-4">
-      {/* Title */}
-      <motion.h2
-        className="font-heading text-uc-gold text-2xl mb-1"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        เอกสารลับ
-      </motion.h2>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
+      style={{ backgroundColor: '#12121F' }}
+    >
+      {/* Noise */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{ backgroundImage: `url(${noiseTexture})`, backgroundSize: '200px', opacity: 0.5 }}
+      />
 
-      {/* Subtitle */}
-      <motion.p
-        className="text-uc-text-secondary text-sm mb-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        อย่าให้คนอื่นเห็น!
-      </motion.p>
+      {/* Radial glow behind card */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(circle at 50% 46%, rgba(246,232,195,.09), transparent 55%)' }}
+      />
 
-      {/* Secret Card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <SecretCard
-          word={word}
-          isMrWhite={role === 'mrwhite'}
-          onRevealed={() => setRevealed(true)}
-        />
-      </motion.div>
-
-      {/* Ready button — only after card is flipped */}
-      {revealed && (
-        <motion.div
-          className="mt-8 w-72"
-          initial={{ opacity: 0, y: 20 }}
+      <div className="relative z-10 flex flex-col items-center gap-7 w-full max-w-sm">
+        {/* Heading */}
+        <motion.h2
+          className="font-heading text-2xl text-white tracking-wide text-center"
+          initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.6 }}
         >
-          {!ready ? (
-            <button
-              onClick={handleReady}
-              className="w-full py-4 bg-uc-paper text-uc-ink font-heading text-lg rounded-xl shadow-lg hover:brightness-95 active:scale-[0.98] transition"
-            >
-              {myPlayer?.is_host ? 'เริ่มเกมได้เลย →' : 'พร้อมแล้ว ✓'}
-            </button>
-          ) : (
-            <p className="text-uc-text-secondary text-center text-sm">
-              {myPlayer?.is_host ? 'กำลังเริ่ม...' : 'รอ Host เริ่มรอบ...'}
-            </p>
-          )}
+          Your secret assignment
+        </motion.h2>
+
+        {/* Flip card */}
+        <motion.div
+          className="w-full"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <SecretCard
+            word={word}
+            isMrWhite={role === 'mrwhite'}
+            onRevealed={() => setRevealed(true)}
+          />
         </motion.div>
-      )}
+
+        {/* Action after reveal */}
+        {revealed && (
+          <motion.div
+            className="w-full"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {!ready ? (
+              <motion.button
+                onClick={handleReady}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 font-heading text-lg tracking-wide text-[#2E2618] relative overflow-visible"
+                style={{
+                  backgroundImage: `url(${paperTexture})`,
+                  backgroundColor: '#F6E8C3',
+                  borderRadius: '0 8px 8px 8px',
+                  boxShadow: '0 3px 10px rgba(20,16,4,.28)',
+                }}
+              >
+                {myPlayer?.is_host ? 'Start round →' : 'Ready ✓'}
+              </motion.button>
+            ) : (
+              <p className="text-center font-mono text-sm text-white/40">
+                {myPlayer?.is_host ? 'Starting…' : 'Waiting for host…'}
+              </p>
+            )}
+          </motion.div>
+        )}
+      </div>
     </div>
   )
 }

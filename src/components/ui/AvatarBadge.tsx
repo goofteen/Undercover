@@ -49,7 +49,7 @@ export default function AvatarBadge({ name, size = 'md', eliminated, speaking, s
           <div className="w-full h-0.5 bg-uc-danger rotate-45 absolute" />
         </div>
       )}
-      <span className={`text-xs font-mono truncate max-w-16 ${eliminated ? 'line-through text-gray-500' : textTheme === 'light' ? 'text-uc-ink-soft' : 'text-uc-paper'}`}>
+      <span className={`text-xs font-mono truncate max-w-16 ${eliminated ? 'line-through text-gray-500' : textTheme === 'light' ? 'text-uc-ink font-semibold' : 'text-uc-paper'}`}>
         {name}
       </span>
     </div>
