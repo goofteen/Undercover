@@ -38,6 +38,7 @@ create table if not exists game_state (
   current_player_index int not null default 0,
   round int not null default 1,
   votes jsonb not null default '{}',
+  descriptions jsonb not null default '{}',
   winner text check (winner in ('civilian', 'impostor', 'mrwhite')),
   updated_at timestamptz default now()
 );

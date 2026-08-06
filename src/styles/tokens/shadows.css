@@ -1,0 +1,11 @@
+:root{
+  --uc-shadow-soft:0 2px 8px rgba(0,0,0,.25);
+  --uc-shadow-large:0 12px 32px rgba(0,0,0,.4);
+  --uc-shadow-warm:0 8px 24px rgba(212,175,55,.18);
+  --uc-shadow-paper:0 3px 10px rgba(20,16,4,.28), 0 1px 2px rgba(20,16,4,.2);
+  --uc-shadow-paper-lifted:0 10px 28px rgba(20,16,4,.35), 0 2px 6px rgba(20,16,4,.22);
+  --uc-glow-gold:0 0 0 2px rgba(212,175,55,.35), 0 0 24px rgba(212,175,55,.25);
+  --uc-ease:cubic-bezier(.25,.7,.35,1);
+  --uc-dur-fast:120ms;
+  --uc-dur-med:220ms;
+}

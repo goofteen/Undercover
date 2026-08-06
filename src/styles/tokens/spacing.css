@@ -1,0 +1,19 @@
+:root{
+  /* 8pt system with 4pt half-step */
+  --uc-space-1:4px;
+  --uc-space-2:8px;
+  --uc-space-3:12px;
+  --uc-space-4:16px;
+  --uc-space-5:20px;
+  --uc-space-6:24px;
+  --uc-space-8:32px;
+  --uc-space-10:40px;
+  --uc-space-12:48px;
+  --uc-space-16:64px;
+  --uc-space-20:80px;
+  /* Desktop frame 1440×1024 */
+  --uc-grid-columns:12;
+  --uc-grid-margin:80px;
+  --uc-grid-gutter:24px;
+  --uc-frame-width:1440px;
+}

@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react'
+import { lazy, useEffect, useState } from 'react'
+import { supabase } from './lib/supabase'
 import { useRoom } from './hooks/useRoom'
-import { useGameState } from './hooks/useGameState'
 import type { LocalPlayerInfo } from './types/game'
 import { getWordForRole } from './lib/gameLogic'
 
-import HomeScreen from './components/screens/HomeScreen'
-import LobbyScreen from './components/screens/LobbyScreen'
-import WordRevealScreen from './components/screens/WordRevealScreen'
-import DescriptionScreen from './components/screens/DescriptionScreen'
-import VotingScreen from './components/screens/VotingScreen'
-import EliminationScreen from './components/screens/EliminationScreen'
-import MrWhiteGuessScreen from './components/screens/MrWhiteGuessScreen'
-import GameOverScreen from './components/screens/GameOverScreen'
+const HomeScreen = lazy(() => import('./components/screens/HomeScreen'))
+const LobbyScreen = lazy(() => import('./components/screens/LobbyScreen'))
+const WordRevealScreen = lazy(() => import('./components/screens/WordRevealScreen'))
+const DescriptionScreen = lazy(() => import('./components/screens/DescriptionScreen'))
+const VotingScreen = lazy(() => import('./components/screens/VotingScreen'))
+const EliminationScreen = lazy(() => import('./components/screens/EliminationScreen'))
+const MrWhiteGuessScreen = lazy(() => import('./components/screens/MrWhiteGuessScreen'))
+const GameOverScreen = lazy(() => import('./components/screens/GameOverScreen'))
 import LeaveButton from './components/ui/LeaveButton'
 
 const LOCAL_KEY = 'undercover_player'
@@ -31,8 +31,7 @@ function saveLocalPlayer(info: LocalPlayerInfo) {
 export default function App() {
   const [localPlayer, setLocalPlayer] = useState<LocalPlayerInfo | null>(() => loadLocalPlayer())
 
-  const { room, players, loading } = useRoom(localPlayer?.room_code ?? null)
-  const { gameState } = useGameState(localPlayer?.room_code ?? null)
+  const { room, players, gameState, loading } = useRoom(localPlayer?.room_code ?? null)
 
   // Sync role/word when game transitions to reveal and we got the role from DB
   useEffect(() => {
@@ -68,7 +67,10 @@ export default function App() {
     saveLocalPlayer(updated)
   }
 
-  function handleLeave() {
+  async function handleLeave() {
+    if (localPlayer) {
+      await supabase.from('players').delete().eq('id', localPlayer.id)
+    }
     sessionStorage.removeItem(LOCAL_KEY)
     setLocalPlayer(null)
     window.history.replaceState({}, '', window.location.pathname)
@@ -78,10 +80,10 @@ export default function App() {
 
   if (loading || !room || !gameState) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8 text-center shadow-xl">
-          <div className="text-4xl mb-3">🔄</div>
-          <p className="text-gray-600">กำลังโหลด...</p>
+      <div className="min-h-screen bg-uc-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-5xl mb-4 animate-pulse-glow">🕵️</div>
+          <p className="font-heading text-uc-gold tracking-wider animate-pulse">กำลังโหลด...</p>
         </div>
       </div>
     )

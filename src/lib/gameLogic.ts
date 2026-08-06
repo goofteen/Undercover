@@ -71,13 +71,14 @@ export function checkWinCondition(
 ): Winner {
   const alive = players.filter((p) => !p.is_eliminated)
   const aliveCivilians = alive.filter((p) => p.role === 'civilian')
-  const aliveImpostors = alive.filter((p) => p.role === 'undercover' || p.role === 'mrwhite')
+  const aliveUndercovers = alive.filter((p) => p.role === 'undercover')
+  const aliveMrWhites = alive.filter((p) => p.role === 'mrwhite')
 
-  // Impostors win if alive impostors >= alive civilians
-  if (aliveImpostors.length >= aliveCivilians.length) return 'impostor'
+  // Civilians win if no undercovers AND no mr.whites remain
+  if (aliveUndercovers.length === 0 && aliveMrWhites.length === 0) return 'civilian'
 
-  // Civilians win if no impostors remain
-  if (aliveImpostors.length === 0) return 'civilian'
+  // Undercovers win if alive undercovers >= alive civilians (mr.white ไม่นับ)
+  if (aliveUndercovers.length >= aliveCivilians.length) return 'impostor'
 
   return null
 }

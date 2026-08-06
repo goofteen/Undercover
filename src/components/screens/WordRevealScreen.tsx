@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import type { LocalPlayerInfo, Player, Room } from '../../types/game'
 import { getWordForRole } from '../../lib/gameLogic'
+import SecretCard from '../ui/SecretCard'
 
 interface Props {
   room: Room
@@ -32,48 +34,62 @@ export default function WordRevealScreen({ room, players, localPlayer, onReady }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">คำลับของคุณ</h2>
-        <p className="text-gray-500 mb-6 text-sm">อย่าให้คนอื่นเห็น!</p>
+    <div className="min-h-screen bg-uc-bg flex flex-col items-center justify-center p-4">
+      {/* Title */}
+      <motion.h2
+        className="font-heading text-uc-gold text-2xl mb-1"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        เอกสารลับ
+      </motion.h2>
 
-        {!revealed ? (
-          <button
-            onClick={() => setRevealed(true)}
-            className="w-full py-8 bg-gradient-to-br from-pink-400 to-rose-500 text-white text-xl font-bold rounded-2xl shadow-lg hover:shadow-xl transition"
-          >
-            แตะเพื่อดูคำลับ 👁️
-          </button>
-        ) : (
-          <div>
-            {word ? (
-              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-6 mb-6">
-                <p className="text-gray-500 text-sm mb-1">คำลับของคุณคือ</p>
-                <p className="text-4xl font-bold text-gray-800">{word}</p>
-                <p className="text-gray-400 text-xs mt-3">คุณอาจเป็นพลเมืองหรือสายลับ — ยังไม่มีใครรู้!</p>
-              </div>
-            ) : (
-              <div className="bg-gray-100 rounded-2xl p-6 mb-6">
-                <p className="text-gray-500 text-sm mb-1">คุณคือ Mr. White</p>
-                <p className="text-gray-600">คุณไม่มีคำลับ — ต้องแอบฟังแล้วเดาเอาเอง!</p>
-              </div>
-            )}
+      {/* Subtitle */}
+      <motion.p
+        className="text-uc-text-secondary text-sm mb-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        อย่าให้คนอื่นเห็น!
+      </motion.p>
 
-            {!ready ? (
-              <button
-                onClick={handleReady}
-                className="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-semibold rounded-2xl transition"
-              >
-                {myPlayer?.is_host ? 'เริ่มเกมได้เลย →' : 'พร้อมแล้ว ✓'}
-              </button>
-            ) : (
-              <div className="text-gray-500">
-                {myPlayer?.is_host ? 'กำลังเริ่ม...' : 'รอ Host เริ่มรอบ...'}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Secret Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <SecretCard
+          word={word}
+          isMrWhite={role === 'mrwhite'}
+          onRevealed={() => setRevealed(true)}
+        />
+      </motion.div>
+
+      {/* Ready button — only after card is flipped */}
+      {revealed && (
+        <motion.div
+          className="mt-8 w-72"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {!ready ? (
+            <button
+              onClick={handleReady}
+              className="w-full py-4 bg-uc-paper text-uc-ink font-heading text-lg rounded-xl shadow-lg hover:brightness-95 active:scale-[0.98] transition"
+            >
+              {myPlayer?.is_host ? 'เริ่มเกมได้เลย →' : 'พร้อมแล้ว ✓'}
+            </button>
+          ) : (
+            <p className="text-uc-text-secondary text-center text-sm">
+              {myPlayer?.is_host ? 'กำลังเริ่ม...' : 'รอ Host เริ่มรอบ...'}
+            </p>
+          )}
+        </motion.div>
+      )}
     </div>
   )
 }

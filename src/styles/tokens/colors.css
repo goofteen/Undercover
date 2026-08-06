@@ -1,0 +1,33 @@
+:root{
+  /* Base palette */
+  --uc-bg:#1A1A2E;
+  --uc-surface:#16213E;
+  --uc-surface-2:#1D2A4D;
+  --uc-paper:#F6E8C3;
+  --uc-paper-2:#EFDDAE;
+  --uc-paper-shadowed:#E3CE97;
+  --uc-gold:#D4AF37;
+  --uc-gold-dark:#B3922B;
+  --uc-danger:#D83A3A;
+  --uc-danger-dark:#B22E2E;
+  --uc-success:#2ECC71;
+  --uc-text-primary:#F5F5F5;
+  --uc-text-secondary:#B9BEC8;
+  --uc-border:rgba(255,255,255,.08);
+  /* Ink on paper surfaces */
+  --uc-ink:#2E2618;
+  --uc-ink-soft:#6B5D3F;
+  /* Semantic aliases */
+  --uc-color-bg:var(--uc-bg);
+  --uc-color-surface-card:var(--uc-surface);
+  --uc-color-paper-card:var(--uc-paper);
+  --uc-color-accent:var(--uc-gold);
+  --uc-color-cta:var(--uc-paper);
+  --uc-color-cta-text:var(--uc-ink);
+  --uc-color-danger:var(--uc-danger);
+  --uc-color-positive:var(--uc-success);
+  --uc-scrim:rgba(10,10,20,.65);
+  --uc-sticky:#FFE888;
+  --uc-sticky-2:#FFD26E;
+  --uc-string:#C0392B;
+}

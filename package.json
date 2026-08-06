@@ -11,7 +11,9 @@
     "deploy": "npm run build && touch dist/.nojekyll && gh-pages -d dist --dotfiles"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.112.1",
+    "framer-motion": "^13.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

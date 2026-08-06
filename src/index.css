@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+@import './styles/detective-theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -10,11 +10,23 @@
 
 body {
   margin: 0;
-  font-family: 'Sarabun', system-ui, sans-serif;
-  background: #f0f4ff;
+  font-family: var(--uc-font-body);
+  background: var(--uc-bg);
+  color: var(--uc-text-primary);
   min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* Noise overlay on all screens */
+#root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url('./assets/textures/noise.png') repeat;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 9999;
 }

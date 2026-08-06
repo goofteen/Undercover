@@ -43,6 +43,7 @@ export interface GameState {
   current_player_index: number
   round: number
   votes: Record<string, string[]> // voted_player_id -> [voter_player_id, ...]
+  descriptions: Record<string, string> // player_id -> description text
   winner: Winner
   updated_at: string
 }

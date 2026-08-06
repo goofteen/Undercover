@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SignOut } from '@phosphor-icons/react'
 
 interface Props {
   onLeave: () => void
@@ -9,18 +10,18 @@ export default function LeaveButton({ onLeave }: Props) {
 
   if (confirm) {
     return (
-      <div className="fixed top-4 left-4 bg-white rounded-2xl shadow-xl p-4 z-50">
-        <p className="text-gray-700 text-sm mb-3">ออกจากเกมนี้?</p>
+      <div className="fixed top-4 left-4 bg-uc-surface border border-white/10 rounded-uc-2 shadow-uc-large p-4 z-50">
+        <p className="text-white/80 text-sm font-body mb-3">ออกจากเกมนี้?</p>
         <div className="flex gap-2">
           <button
             onClick={onLeave}
-            className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600"
+            className="px-4 py-2 bg-uc-danger text-white rounded-uc text-sm font-heading hover:brightness-110 active:scale-[0.98] transition"
           >
             ออกเกม
           </button>
           <button
             onClick={() => setConfirm(false)}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-300"
+            className="px-4 py-2 bg-white/10 text-white/70 rounded-uc text-sm font-body hover:bg-white/20 transition"
           >
             ยกเลิก
           </button>
@@ -32,10 +33,10 @@ export default function LeaveButton({ onLeave }: Props) {
   return (
     <button
       onClick={() => setConfirm(true)}
-      className="fixed top-4 left-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-red-500 transition z-50"
+      className="fixed top-4 left-4 w-10 h-10 bg-uc-surface/80 hover:bg-uc-surface border border-white/10 rounded-full shadow-uc-soft flex items-center justify-center text-white/50 hover:text-uc-danger transition z-50"
       title="ออกจากเกม"
     >
-      ✕
+      <SignOut size={18} weight="bold" />
     </button>
   )
 }

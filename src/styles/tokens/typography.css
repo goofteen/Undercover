@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+:root{
+  --uc-font-heading:'Special Elite', Georgia, serif;
+  --uc-font-body:'Inter', system-ui, -apple-system, sans-serif;
+  --uc-font-mono:'JetBrains Mono', 'Courier New', monospace;
+  --uc-text-hero:48px;
+  --uc-text-h1:36px;
+  --uc-text-h2:28px;
+  --uc-text-h3:22px;
+  --uc-text-body:16px;
+  --uc-text-small:14px;
+  --uc-text-caption:12px;
+  --uc-leading-tight:1.15;
+  --uc-leading-body:1.55;
+  --uc-tracking-stamp:.12em;
+  --uc-tracking-label:.08em;
+}

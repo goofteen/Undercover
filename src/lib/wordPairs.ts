@@ -11,7 +11,7 @@ export const WORD_PAIRS: WordPair[] = [
   { civilian: 'กระต่าย', undercover: 'กระรอก' },
   { civilian: 'กระต่าย', undercover: 'หนูแฮมสเตอร์' },
   { civilian: 'หมา', undercover: 'หมาป่า' },
-  { civilian: 'จระเข้', undercover: 'ตัวเงินตัวทอง' },
+  { civilian: 'จระเข้', undercover: 'ตัวเหี้ย' },
   { civilian: 'นกแก้ว', undercover: 'นกขุนทอง' },
   { civilian: 'ปลาทอง', undercover: 'ปลากัด' },
   { civilian: 'ม้า', undercover: 'ม้าลาย' },
