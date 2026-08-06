@@ -1,0 +1,1 @@
+var e=`/Undercover/assets/noise-DhprN4NQ.png`;export{e as t};
